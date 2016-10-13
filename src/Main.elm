@@ -5,6 +5,7 @@ import Html.Attributes exposing (disabled)
 import Html.Events exposing (onClick)
 import Html.App as App
 import Plaid
+import Accounts
 
 
 main =
@@ -18,7 +19,7 @@ main =
 
 type alias Model =
     { loaded : Bool
-    , publicToken : String
+    , accounts : Maybe Accounts.Model
     }
 
 
@@ -27,7 +28,7 @@ init =
     let
         model =
             { loaded = False
-            , publicToken = ""
+            , accounts = Nothing
             }
     in
         ( model, Cmd.none )
@@ -37,6 +38,7 @@ type Msg
     = NoOp
     | PlaidLinkClicked
     | Plaid Plaid.Msg
+    | Accounts Accounts.Msg
 
 
 update msg model =
@@ -51,7 +53,11 @@ update msg model =
             ( model, Cmd.none )
 
         Plaid (Plaid.Success publicToken meta) ->
-            ( { model | publicToken = publicToken }, Cmd.none )
+            let
+                ( accountsModel, accountsCmd ) =
+                    Accounts.init publicToken
+            in
+                ( { model | accounts = Just accountsModel }, Cmd.map Accounts accountsCmd )
 
         Plaid (Plaid.Error err) ->
             let
@@ -59,6 +65,18 @@ update msg model =
                     Debug.log "Plaid.Error" err
             in
                 ( model, Cmd.none )
+
+        Accounts accountsMsg ->
+            case model.accounts of
+                Just accounts ->
+                    let
+                        ( accountsModel, accountsCmd ) =
+                            Accounts.update accountsMsg accounts
+                    in
+                        ( { model | accounts = Just accountsModel }, accountsCmd )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -71,10 +89,12 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
-    div []
-        [ buttonToPlaidLink model
-        , text model.publicToken
-        ]
+    case model.accounts of
+        Just accounts ->
+            App.map Accounts (Accounts.view accounts)
+
+        Nothing ->
+            buttonToPlaidLink model
 
 
 buttonToPlaidLink model =

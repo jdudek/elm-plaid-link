@@ -1,0 +1,16 @@
+{
+  "name": "elm-plaid-link",
+  "version": "0.0.1",
+  "description": "An example of embedding Plaid Link in an Elm application",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "jd@jandudek.com",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "express": "^4.14.0",
+    "plaid": "^1.1.0"
+  }
+}
