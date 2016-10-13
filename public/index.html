@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Plaid Link Example</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="https://cdn.plaid.com/link/stable/link-initialize.js"></script>
+    <script src="main.js"></script>
+    <script>
+      var node = document.getElementById('app');
+      var app = Elm.Main.embed(node);
+
+      var plaid = Plaid.create({
+        env: 'tartan',
+        clientName: 'Foo',
+        key: 'test_key',
+        product: 'auth',
+        onLoad: function () {
+          app.ports.onPlaidLoad.send(null);
+        },
+        onSuccess: function (publicToken, metadata) {
+          app.ports.onPlaidSuccess.send([publicToken, metadata]);
+        },
+        onExit: function () {
+          app.ports.onPlaidExit.send(null);
+        },
+      });
+
+      app.ports.openPlaid.subscribe(function () {
+        plaid.open();
+      });
+    </script>
+  </body>
+</html>
