@@ -19,13 +19,9 @@ fetchAccounts : String -> Task Http.Error (List Account)
 fetchAccounts publicToken =
     let
         url =
-            "/authenticate"
-
-        json =
-            Json.object
-                [ ( "public_token", Json.string publicToken ) ]
+            Http.url "/accounts" [ ("public_token", publicToken) ]
     in
-        postJson accountsDecoder url json
+        Http.get accountsDecoder url
 
 
 accountsDecoder : Decoder (List Account)
@@ -56,21 +52,3 @@ accountDecoder =
             ("meta" := metaDecoder)
             (Decode.maybe ("numbers" := numbersDecoder))
             ("type" := string)
-
-
-
--- Http.send does not set proper Content-Type, thus we need our own postJson
-
-
-postJson : Decoder a -> String -> Json.Value -> Task Http.Error a
-postJson decoder url json =
-    let
-        request =
-            { verb = "POST"
-            , url = url
-            , headers = [ ( "Content-Type", "application/json" ) ]
-            , body = Json.encode 0 json |> Http.string
-            }
-    in
-        Http.send Http.defaultSettings request
-            |> Http.fromJson decoder
