@@ -1,6 +1,7 @@
 module Accounts exposing (..)
 
 import Html exposing (Html, div, text)
+import Html.Attributes exposing (class)
 import Http
 import Task
 import Api exposing (Account, fetchAccounts)
@@ -51,5 +52,22 @@ cmdToFetch model =
 view : Model -> Html Msg
 view model =
     div []
-        [ text (toString model.accounts)
-        ]
+        (List.map accountView model.accounts)
+
+
+accountView : Account -> Html Msg
+accountView account =
+    let
+        numberLine show =
+            case account.numbers of
+                Just numbers ->
+                    div [] [ text (show numbers) ]
+
+                Nothing ->
+                    text ""
+    in
+        div [ class "account" ]
+            [ div [ class "account__heading" ] [ text account.meta.name ]
+            , numberLine (\numbers -> "Account: " ++ numbers.account)
+            , numberLine (\numbers -> "Routing: " ++ numbers.routing)
+            ]

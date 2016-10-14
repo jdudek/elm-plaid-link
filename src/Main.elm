@@ -1,7 +1,7 @@
 module Main exposing (main)
 
-import Html exposing (Html, div, text, button)
-import Html.Attributes exposing (disabled)
+import Html exposing (Html, div, text, button, h1, header, p, hr)
+import Html.Attributes exposing (disabled, class)
 import Html.Events exposing (onClick)
 import Html.App as App
 import Plaid
@@ -89,17 +89,38 @@ subscriptions model =
 
 view : Model -> Html Msg
 view model =
+    div [ class "container page-container" ]
+        [ header [ class "page-header" ]
+            [ h1 [] [ text "elm-plaid-link" ]
+            , div [ class "secondary-heading secondary-heading--is-muted" ]
+                [ text "A sample integration of Plaid Link in Elm" ]
+            ]
+        , mainView model
+        ]
+
+
+mainView model =
     case model.accounts of
         Just accounts ->
             App.map Accounts (Accounts.view accounts)
 
         Nothing ->
-            buttonToPlaidLink model
+            buttonView model
+
+
+buttonView model =
+    div []
+        [ p [] [ text "Plaid Link is a drop-in module that offers a secure, elegant authentication flow for all institutions supported by Plaid." ]
+        , p [] [ text "This demo allows you to connect a bank account using Plaid Link, and collect account-level data from Plaid Auth. You can do this using the Plaid test credentials displayed at the bottom of the Plaid Link screen." ]
+        , hr [ class "hr" ] []
+        , buttonToPlaidLink model
+        ]
 
 
 buttonToPlaidLink model =
     button
         [ disabled (not model.loaded)
+        , class "button button--is-default"
         , onClick PlaidLinkClicked
         ]
         [ text "Link your bank account" ]
