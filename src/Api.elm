@@ -1,9 +1,10 @@
-module Api exposing (Account, fetchAccounts)
+module Api exposing (Account, fetchAccounts, Transaction, fetchTransactions)
 
 import Http
-import Json.Decode as Decode exposing (Decoder, object1, object2, object5, (:=), string, float, list)
+import Json.Decode as Decode exposing (Decoder, object1, object2, object5, object8, (:=), string, float, list, bool)
 import Json.Encode as Json
 import Task exposing (Task)
+import Date exposing (Date)
 
 
 type alias Account =
@@ -15,13 +16,43 @@ type alias Account =
     }
 
 
+type alias Transaction =
+    { id : String
+    , accountId : String
+    , amount : Float
+    , date : Date
+    , name : String
+    , meta : { location : Maybe Location }
+    , pending : Bool
+    , category : Maybe (List String)
+    }
+
+
+type alias Location =
+    { city : String
+    , state : String
+    , address : Maybe String
+    , zip : Maybe String
+    , coordinates : Maybe { lat : Float, lon : Float }
+    }
+
+
 fetchAccounts : String -> Task Http.Error (List Account)
 fetchAccounts publicToken =
     let
         url =
-            Http.url "/accounts" [ ("public_token", publicToken) ]
+            Http.url "/accounts" [ ( "public_token", publicToken ) ]
     in
         Http.get accountsDecoder url
+
+
+fetchTransactions : String -> Task Http.Error (List Transaction)
+fetchTransactions publicToken =
+    let
+        url =
+            Http.url "/transactions" [ ( "public_token", publicToken ) ]
+    in
+        Http.get transactionsDecoder url
 
 
 accountsDecoder : Decoder (List Account)
@@ -52,3 +83,50 @@ accountDecoder =
             ("meta" := metaDecoder)
             (Decode.maybe ("numbers" := numbersDecoder))
             ("type" := string)
+
+
+transactionsDecoder : Decoder (List Transaction)
+transactionsDecoder =
+    Decode.at [ "transactions" ] (list transactionDecoder)
+
+
+transactionDecoder : Decoder Transaction
+transactionDecoder =
+    let
+        dateDecoder =
+            string
+                `Decode.andThen`
+                    \s ->
+                        case Date.fromString s of
+                            Ok d ->
+                                Decode.succeed d
+
+                            Err e ->
+                                Decode.fail (s ++ " is not a date")
+
+        metaDecoder =
+            object1 (\l -> { location = l })
+                (Decode.maybe ("location" := locationDecoder))
+
+        locationDecoder =
+            object5 Location
+                ("city" := string)
+                ("state" := string)
+                (Decode.maybe ("address" := string))
+                (Decode.maybe ("zip" := string))
+                (Decode.maybe ("coordinates" := coordinatesDecoder))
+
+        coordinatesDecoder =
+            object2 (\lat lon -> { lat = lat, lon = lon })
+                ("lat" := float)
+                ("lon" := float)
+    in
+        object8 Transaction
+            ("_id" := string)
+            ("_account" := string)
+            ("amount" := float)
+            ("date" := dateDecoder)
+            ("name" := string)
+            ("meta" := metaDecoder)
+            ("pending" := bool)
+            (Decode.maybe ("category" := list string))

@@ -8,24 +8,21 @@ import Api exposing (Account, fetchAccounts)
 
 
 type alias Model =
-    { publicToken : String
-    , accounts : List Account
+    { accounts : List Account
     }
 
 
 init publicToken =
     let
         model =
-            { publicToken = publicToken
-            , accounts = []
+            { accounts = []
             }
     in
-        ( model, cmdToFetch model )
+        ( model, cmdToFetch publicToken )
 
 
 type Msg
-    = NoOp
-    | FetchSuccess (List Account)
+    = FetchSuccess (List Account)
     | FetchFailure Http.Error
 
 
@@ -41,12 +38,9 @@ update msg model =
             in
                 ( model, Cmd.none )
 
-        NoOp ->
-            ( model, Cmd.none )
 
-
-cmdToFetch model =
-    Task.perform FetchFailure FetchSuccess (Api.fetchAccounts model.publicToken)
+cmdToFetch publicToken =
+    Task.perform FetchFailure FetchSuccess (Api.fetchAccounts publicToken)
 
 
 view : Model -> Html Msg

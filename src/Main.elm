@@ -1,11 +1,12 @@
 module Main exposing (main)
 
-import Html exposing (Html, div, text, button, h1, header, p, hr)
+import Html exposing (Html, div, text, button, h1, header, p, hr, ul, li, span)
 import Html.Attributes exposing (disabled, class)
 import Html.Events exposing (onClick)
 import Html.App as App
 import Plaid
 import Accounts
+import Transactions
 
 
 main =
@@ -19,8 +20,14 @@ main =
 
 type alias Model =
     { loaded : Bool
-    , accounts : Maybe Accounts.Model
+    , publicToken : String
+    , pane : Maybe Pane
     }
+
+
+type Pane
+    = AccountsPane Accounts.Model
+    | TransactionsPane Transactions.Model
 
 
 init : ( Model, Cmd Msg )
@@ -28,17 +35,20 @@ init =
     let
         model =
             { loaded = False
-            , accounts = Nothing
+            , publicToken = ""
+            , pane = Nothing
             }
     in
         ( model, Cmd.none )
 
 
 type Msg
-    = NoOp
-    | PlaidLinkClicked
+    = PlaidLinkClicked
     | Plaid Plaid.Msg
     | Accounts Accounts.Msg
+    | Transactions Transactions.Msg
+    | ShowAccounts
+    | ShowTransactions
 
 
 update msg model =
@@ -56,8 +66,14 @@ update msg model =
             let
                 ( accountsModel, accountsCmd ) =
                     Accounts.init publicToken
+
+                model' =
+                    { model
+                        | publicToken = publicToken
+                        , pane = Just (AccountsPane accountsModel)
+                    }
             in
-                ( { model | accounts = Just accountsModel }, Cmd.map Accounts accountsCmd )
+                ( model', Cmd.map Accounts accountsCmd )
 
         Plaid (Plaid.Error err) ->
             let
@@ -66,20 +82,50 @@ update msg model =
             in
                 ( model, Cmd.none )
 
-        Accounts accountsMsg ->
-            case model.accounts of
-                Just accounts ->
+        ShowAccounts ->
+            let
+                ( accountsModel, accountsCmd ) =
+                    Accounts.init model.publicToken
+
+                model' =
+                    { model | pane = Just (AccountsPane accountsModel) }
+            in
+                ( model', Cmd.map Accounts accountsCmd )
+
+        ShowTransactions ->
+            let
+                ( transactionsModel, transactionsCmd ) =
+                    Transactions.init model.publicToken
+
+                model' =
+                    { model | pane = Just (TransactionsPane transactionsModel) }
+            in
+                ( model', Cmd.map Transactions transactionsCmd )
+
+        _ ->
+            case ( model.pane, msg ) of
+                ( Just (AccountsPane accountsModel), Accounts accountsMsg ) ->
                     let
-                        ( accountsModel, accountsCmd ) =
-                            Accounts.update accountsMsg accounts
+                        ( accountsModel', accountsCmd ) =
+                            Accounts.update accountsMsg accountsModel
+
+                        model' =
+                            { model | pane = Just (AccountsPane accountsModel') }
                     in
-                        ( { model | accounts = Just accountsModel }, accountsCmd )
+                        ( model', accountsCmd )
 
-                Nothing ->
+                ( Just (TransactionsPane transactionsModel), Transactions transactionsMsg ) ->
+                    let
+                        ( transactionsModel', transactionsCmd ) =
+                            Transactions.update transactionsMsg transactionsModel
+
+                        model' =
+                            { model | pane = Just (TransactionsPane transactionsModel') }
+                    in
+                        ( model', transactionsCmd )
+
+                _ ->
                     ( model, Cmd.none )
-
-        NoOp ->
-            ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -99,15 +145,40 @@ view model =
         ]
 
 
+mainView : Model -> Html Msg
 mainView model =
-    case model.accounts of
-        Just accounts ->
-            App.map Accounts (Accounts.view accounts)
+    let
+        withNavigation view =
+            div [ class "grid page-grid" ]
+                [ div [ class "grid__column grid__column--is-three-columns" ] [ navigationView ]
+                , div [ class "grid__column grid__column--is-nine-columns" ] [ view ]
+                ]
+    in
+        case model.pane of
+            Just (AccountsPane accounts) ->
+                App.map Accounts (Accounts.view accounts) |> withNavigation
 
-        Nothing ->
-            buttonView model
+            Just (TransactionsPane transactions) ->
+                App.map Transactions (Transactions.view transactions) |> withNavigation
+
+            Nothing ->
+                buttonView model
 
 
+navigationView : Html Msg
+navigationView =
+    let
+        itemView msg caption =
+            li [ class "vertical-navigation__item" ]
+                [ span [ class "anchor vertical-navigation__anchor", onClick msg ] [ text caption ] ]
+    in
+        ul [ class "vertical-navigation" ]
+            [ itemView ShowAccounts "Accounts"
+            , itemView ShowTransactions "Transactions"
+            ]
+
+
+buttonView : Model -> Html Msg
 buttonView model =
     div []
         [ p [] [ text "Plaid Link is a drop-in module that offers a secure, elegant authentication flow for all institutions supported by Plaid." ]
@@ -117,6 +188,7 @@ buttonView model =
         ]
 
 
+buttonToPlaidLink : Model -> Html Msg
 buttonToPlaidLink model =
     button
         [ disabled (not model.loaded)

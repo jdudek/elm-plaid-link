@@ -15,6 +15,14 @@ body {
   margin-bottom: 0;
 }
 
+.page-grid {
+  padding-top: 2rem;
+}
+
+.anchor {
+  cursor: pointer;
+}
+
 .hr {
   border-color: #f7f9fb;
   border-style: solid;
@@ -34,4 +42,19 @@ body {
   font-size: 1.6rem;
   font-weight: 500;
   line-height: 2.4rem;
+}
+
+.transaction {
+  margin-bottom: 1rem;
+}
+
+.transaction__heading {
+  color: #033156;
+  font-size: 1.6rem;
+  font-weight: 500;
+  line-height: 2.4rem;
+}
+
+.transaction__amount {
+  float: right;
 }
