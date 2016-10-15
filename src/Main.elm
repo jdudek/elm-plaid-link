@@ -191,8 +191,7 @@ buttonView model =
 buttonToPlaidLink : Model -> Html Msg
 buttonToPlaidLink model =
     button
-        [ disabled (not model.loaded)
-        , class "button button--is-default"
+        [ class "button button--is-default"
         , onClick PlaidLinkClicked
         ]
         [ text "Link your bank account" ]
