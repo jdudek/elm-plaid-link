@@ -45,4 +45,4 @@ app.get('/transactions', function(req, res) {
 });
 
 app.use(express.static('public'));
-app.listen(process.env.APP_PORT || 3000);
+app.listen(process.env.PORT || 3000);
