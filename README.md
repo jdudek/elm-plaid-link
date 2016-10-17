@@ -15,7 +15,7 @@ make setup all
 Start the server:
 
 ```
-make start
+PLAID_CLIENT_ID=test_id PLAID_SECRET=test_secret make start
 ```
 
 Run a watcher that compiles Elm code when it changes:
